@@ -1,0 +1,77 @@
+﻿<!doctype html>
+<html lang="es" ng-app="twitterApp">
+<head>
+    <meta charset="utf-8">
+    <title>Twitter wall </title>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/angular.min.js"></script>
+    <script type="text/javascript" src="/js/socket.io.js"></script>
+    <script type="text/javascript" src="/js/twitter_app.js"></script>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/css/twitter_btn.css">
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#keyword').focus();
+            // slideIn CSS animation
+            var flip_direction = false;
+            $(document).bind('DOMNodeInserted', function (e) {
+                if ($(e.target).attr('class') == "row ng-scope") {
+                    var panel = $(e.target).find(".panel-default");
+                    panel.addClass('animated');
+                    var tweetCount = $(".row.ng-scope").length;
+                    if (flip_direction) {
+                        panel.addClass('slideInLeft');
+                    } else {
+                        panel.addClass('slideInRight');
+                    }
+                    flip_direction = !flip_direction;
+                }
+            });
+        });
+    </script>
+</head>
+<body style="background-image: url('/img/congruent_pentagon.png');" ng-controller="TwitterController">
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" id="keyword" class="form-control" placeholder="Search for..." maxlength="20" ng-model="keyword">
+                <span class="input-group-btn">
+                    <a class="btn btn-social-icon btn-twitter" ng-click="keywordSearch()">
+                        <span class="fa fa-twitter"></span>
+                    </a>
+                    <a class="btn btn-default" ng-click="reset()">
+                        <span class="fa fa-refresh"></span>
+                    </a>
+                </span>
+            </div>
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+
+    <div class="row" ng-repeat="tweet in tweets">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="media">
+                        <div class="media-left">
+                            <img class="media-object" ng-src="{{tweet.user.profile_image_url}}" alt="foto">
+                        </div>
+                        <div class="media-body">
+                            <h4 class="media-heading">{{ tweet.user.name }}</h4>
+                            <h5 class="media-heading" style="color: grey;">@{{ tweet.user.screen_name }} </h5>
+                            {{ tweet.text }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+
+</body>
+</html>
