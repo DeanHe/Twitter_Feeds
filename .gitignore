@@ -1,5 +1,6 @@
 node_modules/
+obj/Debug/*
 *.njsproj
 /typings.json
-/evn.js
+/env.js
 *.dll
