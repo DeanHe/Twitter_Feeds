@@ -71,8 +71,6 @@ if (!process.env.CONSUMER_KEY) {
 // MongoDB connection
 mongoose.connect(process.env['MONGO_CONNECTION']);
 var DB_MAX = 20;
-var dbQuery = TwitterModel.find();
-dbQuery.sort({ 'id': 'desc' });
 // twitter API
 var Twitter = require('twitter');
 var twit = new Twitter({
