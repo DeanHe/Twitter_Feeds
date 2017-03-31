@@ -24,6 +24,13 @@ twitterApp.controller('TwitterController', function ($scope) {
         $scope.setKeyWord($scope.keyword);
         $scope.tweets = [];
     }
+    // check for ENTER key press
+    $scope.keywordOnKeyUp = function (event) {
+        if (event.keyCode == 13) {
+            $scope.setKeyWord($scope.keyword);
+            $scope.tweets = [];
+        }
+    }
     $scope.reset = function () {
         $scope.keyword = "";
         $scope.socket.emit('search_stop');

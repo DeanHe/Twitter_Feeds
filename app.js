@@ -6,6 +6,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var ejsEngine = require("ejs-mate");
 var socket_io = require("socket.io");
+var mongoose = require('mongoose');
+var TwitterModel = require('./twitter_model.js');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -64,8 +66,13 @@ app.use(function (err, req, res, next) {
 });
 // If undefined in our process load our local file
 if (!process.env.CONSUMER_KEY) {
-    var env = require('./env.js')
+    var env = require('./env.js');
 }
+// MongoDB connection
+mongoose.connect(process.env['MONGO_CONNECTION']);
+var DB_MAX = 20;
+var dbQuery = TwitterModel.find();
+dbQuery.sort({ 'id': 'desc' });
 // twitter API
 var Twitter = require('twitter');
 var twit = new Twitter({
@@ -77,13 +84,26 @@ var twit = new Twitter({
 // socket.io events
 io.on('connection', function (socket) {
     var twitter_stream = null;
+    // for storing latest tweets
+    var tweetsArray = [];
+    // initial the beginning twitter wall from mongodb
+    TwitterModel.find().sort({ timestamp_ms: 1 }).exec(function (err, data) {
+        for (var i in data) {
+            var tweet = data[i];
+            socket.emit('new_tweet', tweet);
+        }
+    });
+    // listen on io event
     socket.on('search_keyword', function (keyword) {
-
         twit.stream('statuses/filter', { track: keyword }, function (stream) {
             if (twitter_stream)
                 twitter_stream.destroy();
 
             stream.on('data', function (tweet) {
+                if (tweetsArray.length >= DB_MAX) {
+                    tweetsArray.pop();
+                }
+                tweetsArray.unshift(tweet);
                 socket.emit('new_tweet', tweet);
             });
 
@@ -97,13 +117,41 @@ io.on('connection', function (socket) {
 
     });
     socket.on('search_stop', function () {
-        if (twitter_stream)
+        if (twitter_stream) {
             twitter_stream.destroy();
+        }
     });
 
     socket.on('disconnect', function () {
-        if (twitter_stream)
+        if (twitter_stream) {
             twitter_stream.destroy();
+            //save last search result to mongodb
+            var entries = [];
+            for (var i in tweetsArray) {
+                var tweet = tweetsArray[i];
+                var entry = new TwitterModel({
+                    text: tweet.text,
+                    timestamp_ms: tweet.timestamp_ms,
+                    user: {
+                        name: tweet.user.name,
+                        screen_name: tweet.user.screen_name,
+                        profile_image_url: tweet.user.profile_image_url
+                    }
+                });
+                entries.push(entry);
+            }
+            TwitterModel.collection.insert(entries, function (err, docs) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                TwitterModel.find({}).select('_id').sort({ timestamp_ms: -1 }).limit(DB_MAX)
+                    .exec(function (err, docs) {
+                        var ids = docs.map(function (doc) { return doc._id; });
+                        TwitterModel.remove({ _id: { $nin: ids } }, function (err) { });
+                    });
+            });
+        }
     });
 });
 module.exports = app;
